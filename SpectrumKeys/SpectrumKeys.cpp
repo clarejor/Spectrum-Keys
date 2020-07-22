@@ -8,6 +8,8 @@
               if ((punk) != NULL)  \
                 { (punk)->Release(); (punk) = NULL; }
 
+bool stereo = true;
+
 void quit(int exitCode) {
    CoUninitialize();
    exit(exitCode);
@@ -25,7 +27,6 @@ IAudioMeterInformation* getAudioMeter() {
    IMMDevice* pDevice = NULL;
    IAudioMeterInformation* pMeterInfo = NULL;
    IPropertyStore* pProps = NULL;
-   LPWSTR pwszID = NULL;
 
    CoInitialize(NULL);
 
@@ -50,21 +51,14 @@ IAudioMeterInformation* getAudioMeter() {
       goto Exit;
    }
 
-   // Get device properties
+   // Open device properties
    hr = pDevice->OpenPropertyStore(STGM_READ, &pProps);
    if (FAILED(hr)) {
       std::cerr << "IMMDevice->OpenPropertyStore returned " << hr << std::endl;
       goto Exit;
    }
 
-   // Get the endpoint ID string.
-   hr = pDevice->GetId(&pwszID);
-   if (FAILED(hr)) {
-      std::cerr << "IMMDevice->GetId returned " << hr << std::endl;
-      goto Exit;
-   }
-
-   // Get the endpoint's friendly-name property
+   // Get the device's friendly name
    PROPVARIANT varName;
    PropVariantInit(&varName);
    hr = pProps->GetValue(PKEY_Device_FriendlyName, &varName);
@@ -73,10 +67,8 @@ IAudioMeterInformation* getAudioMeter() {
       goto Exit;
    }
 
-   // Print endpoint friendly name and endpoint ID.
-   printf("Default audio playback device found:\n  \"%S\" (%S)\n", varName.pwszVal, pwszID);
-   CoTaskMemFree(pwszID);
-   pwszID = NULL;
+   // Print endpoint info
+   printf("Default audio playback device: \"%S\" (%S)\n", varName.pwszVal);
    PropVariantClear(&varName);
 
    hr = pDevice->Activate(
@@ -112,10 +104,15 @@ int main() {
       quit(-1);
    }
 
-   float peak;
+   float peaks[2];
    while (true) {
-      audioMeter->GetPeakValue(&peak);
-      printf("%.3f\n", peak);
+      if (stereo) {
+         audioMeter->GetChannelsPeakValues(2, &peaks[0]);
+         printf("L: %.2f  R: %.2f\n", peaks[0], peaks[1]);
+      } else {
+         audioMeter->GetPeakValue(&peaks[0]);
+         printf("%.3f\n", peaks[0]);
+      }
       Sleep(200);
    }
    quit(0);
