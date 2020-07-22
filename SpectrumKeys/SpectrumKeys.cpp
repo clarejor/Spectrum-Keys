@@ -3,6 +3,7 @@
 #include <mmdeviceapi.h>
 #include <endpointvolume.h>
 #include <Functiondiscoverykeys_devpkey.h>
+#include "Keyboard.h"
 
 #define SAFE_RELEASE(punk)  \
               if ((punk) != NULL)  \
@@ -68,7 +69,7 @@ IAudioMeterInformation* getAudioMeter() {
    }
 
    // Print endpoint info
-   printf("Default audio playback device: \"%S\" (%S)\n", varName.pwszVal);
+   printf("Default audio playback device: \"%S\"\n", varName.pwszVal);
    PropVariantClear(&varName);
 
    hr = pDevice->Activate(
@@ -99,10 +100,15 @@ int main() {
       quit(-1);
    }
 
+   // Initialize audio device API
    auto audioMeter = getAudioMeter();
    if (!audioMeter) {
       quit(-1);
    }
+
+   // Initialize keyboard
+   Keyboard keys;
+   keys.init();
 
    float peaks[2];
    while (true) {
