@@ -115,11 +115,12 @@ int main() {
       if (stereo) {
          audioMeter->GetChannelsPeakValues(2, &peaks[0]);
          printf("L: %.2f  R: %.2f\n", peaks[0], peaks[1]);
+         keys.update(peaks[0], peaks[1]);
       } else {
          audioMeter->GetPeakValue(&peaks[0]);
          printf("%.3f\n", peaks[0]);
       }
-      Sleep(200);
+      Sleep(33);
    }
    quit(0);
 }

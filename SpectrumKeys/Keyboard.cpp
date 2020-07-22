@@ -1,8 +1,5 @@
 #include "Keyboard.h"
-#include "SDKDLL.h"
 #include <string>
-
-
 
 std::string g_DeviceName[DEVICE_NUM] = {
 	"MasterKeys Pro L", "MasterKeys Pro L White",
@@ -33,16 +30,59 @@ EFF_INDEX  g_EffectMap[EFFECT_NUM] = {
 int Keyboard::init() {
 	printf("CoolerMaster SDK DLL version: %d\n", GetCM_SDK_DllVer());
 
-	if (!IsDevicePlug(DEV_CK530)) {
+	// Detect compatible keyboard
+	if (!IsDevicePlug(this->type)) {
 		printf("No compatible keyboard detected\n");
 		return -1;
 	}
 	printf("CK530 detected\n");
 
+	// Enable software LED control
+	if (!EnableLedControl(true, this->type)) {
+		printf("Failed to enable LED control\n");
+		return -1;
+	}
+
+	if (!SetFullLedColor(128, 128, 128, this->type)) {
+		printf("Failed to set LED color\n");
+	}
 
 	return 0;
 }
 
-void Keyboard::cleanup() {
+void Keyboard::update(float left, float right) {
+	char rgb[3];
+	for (int col = 0; col < this->numCols; col++) {
+		this->getColumnColor(col, left, right, &rgb[0]);
+		SetLedColor(0, col, rgb[0], rgb[1], rgb[2], this->type);
+	}
+}
 
+void Keyboard::getColumnColor(int col, float left, float right, char* color) {
+	int peakCol = this->numCols * left;
+	int yellowCol = this->numCols * 0.5;
+
+	if (col >= peakCol) {
+		color[0] = 128;
+		color[1] = 128;
+		color[2] = 128;
+	} else {
+		if (!gradient)
+			col = peakCol;
+
+		if (col < yellowCol) {
+			color[0] = 255 * (1.0f - ((yellowCol - col) / (float)yellowCol));
+			color[1] = 255;
+			color[2] = 0;
+		}
+		else {
+			color[0] = 255;
+			color[1] = 255 * (1.0f - ((col - yellowCol) / (float)(this->numCols - yellowCol)));
+			color[2] = 0;
+		}
+	}
+}
+
+void Keyboard::cleanup() {
+	EnableLedControl(false, this->type);
 }
