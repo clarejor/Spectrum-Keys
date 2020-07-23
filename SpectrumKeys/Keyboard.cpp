@@ -51,48 +51,65 @@ int Keyboard::init() {
 }
 
 void Keyboard::update(float left, float right) {
-	char rgb[3];
-	for (int col = this->minCol; col <= this->maxCol; col++) {
-		this->getColumnColor(col, left, right, &rgb[0]);
-		SetLedColor(0, col, rgb[0], rgb[1], rgb[2], this->type);
+	if (this->clipAlert && (left > 0.95 || right > 0.95)) {
+		this->alerted = true;
+		SetFullLedColor(255, 0, 0, this->type);
+	} else {
+		// Clear alert
+		if (this->alerted) {
+			this->alerted = false;
+			SetFullLedColor(128, 128, 128, this->type);
+		}
+		char rgb[3];
+		for (int col = this->minCol; col < this->maxCol; col++) {
+			this->getColumnColor(col, left, right, &rgb[0]);
+			SetLedColor(0, col, rgb[0], rgb[1], rgb[2], this->type);
+		}
 	}
+}
+
+float mix (float a, float b, float t) {
+	return (a * (1 - t)) + (b * t);
 }
 
 void Keyboard::getColumnColor(int col, float left, float right, char* color) {
 	if (this->stereo) {
-		float middle = this->minCol + (this->maxCol - this->minCol) * 0.5;
+		float middle = mix(this->minCol, this->maxCol, 0.5);
 		if (col < middle) {
 			this->getColumnColorRange(col, this->minCol, middle, left, color);
 		} else {
-			this->getColumnColorRange(col, middle, this->maxCol, right, color);
+			this->getColumnColorRange(col, this->maxCol, middle, right, color);
 		}
 	} else {
 		this->getColumnColorRange(col, 0, this->maxCol, max(left, right), color);
 	}
 }
 
-void Keyboard::getColumnColorRange(int col, float min, float max, float level, char* color) {
-	float c = col - min + 0.5;
-	max -= min;
-	float peakCol = max * level;
-	float yellowCol = max * 0.5;
+void Keyboard::getColumnColorRange(int col, float startCol, float endCol, float level, char* color) {
+	float range = abs(startCol - endCol);
+	float c = abs(0.5 + col - startCol) / range;
+	float yellow = 0.5;
 
-	if (c > peakCol) {
+	if (level > 0.95) {
+		color[0] = 255;
+		color[1] = 0;
+		color[2] = 0;
+	} else if (c > level) {
 		color[0] = 128;
 		color[1] = 128;
 		color[2] = 128;
 	} else {
 		if (!gradient)
-			c = peakCol;
+			c = level;
 
-		if (c < yellowCol) {
-			color[0] = 255 * (1.0f - ((yellowCol - c) / (float)yellowCol));
+		if (c < yellow) {
+			color[0] = mix(0, 255, c / yellow);
 			color[1] = 255;
 			color[2] = 0;
 		}
 		else {
 			color[0] = 255;
-			color[1] = 255 * (1.0f - ((c - yellowCol) / (float)(max - yellowCol)));
+			color[1] = mix(255, 0, (c - yellow) / (1.0 - yellow));
 			color[2] = 0;
 		}
 	}
