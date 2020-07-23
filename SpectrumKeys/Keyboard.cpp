@@ -52,32 +52,47 @@ int Keyboard::init() {
 
 void Keyboard::update(float left, float right) {
 	char rgb[3];
-	for (int col = 0; col < this->numCols; col++) {
+	for (int col = this->minCol; col <= this->maxCol; col++) {
 		this->getColumnColor(col, left, right, &rgb[0]);
 		SetLedColor(0, col, rgb[0], rgb[1], rgb[2], this->type);
 	}
 }
 
 void Keyboard::getColumnColor(int col, float left, float right, char* color) {
-	int peakCol = this->numCols * left;
-	int yellowCol = this->numCols * 0.5;
+	if (this->stereo) {
+		float middle = this->minCol + (this->maxCol - this->minCol) * 0.5;
+		if (col < middle) {
+			this->getColumnColorRange(col, this->minCol, middle, left, color);
+		} else {
+			this->getColumnColorRange(col, middle, this->maxCol, right, color);
+		}
+	} else {
+		this->getColumnColorRange(col, 0, this->maxCol, max(left, right), color);
+	}
+}
 
-	if (col >= peakCol) {
+void Keyboard::getColumnColorRange(int col, float min, float max, float level, char* color) {
+	float c = col - min + 0.5;
+	max -= min;
+	float peakCol = max * level;
+	float yellowCol = max * 0.5;
+
+	if (c > peakCol) {
 		color[0] = 128;
 		color[1] = 128;
 		color[2] = 128;
 	} else {
 		if (!gradient)
-			col = peakCol;
+			c = peakCol;
 
-		if (col < yellowCol) {
-			color[0] = 255 * (1.0f - ((yellowCol - col) / (float)yellowCol));
+		if (c < yellowCol) {
+			color[0] = 255 * (1.0f - ((yellowCol - c) / (float)yellowCol));
 			color[1] = 255;
 			color[2] = 0;
 		}
 		else {
 			color[0] = 255;
-			color[1] = 255 * (1.0f - ((col - yellowCol) / (float)(this->numCols - yellowCol)));
+			color[1] = 255 * (1.0f - ((c - yellowCol) / (float)(max - yellowCol)));
 			color[2] = 0;
 		}
 	}
