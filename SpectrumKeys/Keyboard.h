@@ -15,7 +15,7 @@ public:
 private:
    const int minCol = 1;
    const int maxCol = 18;
-   const DEVICE_INDEX type = DEV_CK530;
+   DEVICE_INDEX model = DEV_DEFAULT;
    const bool gradient = true;
    const bool stereo = true;
    const bool clipAlert = true;

@@ -31,19 +31,25 @@ int Keyboard::init() {
 	printf("CoolerMaster SDK DLL version: %d\n", GetCM_SDK_DllVer());
 
 	// Detect compatible keyboard
-	if (!IsDevicePlug(this->type)) {
-		printf("No compatible keyboard detected\n");
-		return -1;
-	}
-	printf("CK530 detected\n");
+   for (int dev = 0; dev < 16; dev++) {
+      if (IsDevicePlug((DEVICE_INDEX) dev)) {
+         this->model = (DEVICE_INDEX) dev;
+         break;
+      }
+   }
+
+   if (this->model == DEV_DEFAULT) {
+      printf("No compatible keyboard detected\n");
+      return -1;
+   }
 
 	// Enable software LED control
-	if (!EnableLedControl(true, this->type)) {
+	if (!EnableLedControl(true, this->model)) {
 		printf("Failed to enable LED control\n");
 		return -1;
 	}
 
-	if (!SetFullLedColor(128, 128, 128, this->type)) {
+	if (!SetFullLedColor(128, 128, 128, this->model)) {
 		printf("Failed to set LED color\n");
 	}
 
@@ -53,12 +59,12 @@ int Keyboard::init() {
 void Keyboard::update(float left, float right) {
 	if (this->clipAlert && (left > 0.95 || right > 0.95)) {
 		this->alerted = true;
-		SetFullLedColor(255, 0, 0, this->type);
+		SetFullLedColor(255, 0, 0, this->model);
 	} else {
 		// Clear alert
 		if (this->alerted) {
 			this->alerted = false;
-			SetFullLedColor(128, 128, 128, this->type);
+			SetFullLedColor(128, 128, 128, this->model);
 		}
 
 		COLOR_MATRIX colors = {};
@@ -67,7 +73,7 @@ void Keyboard::update(float left, float right) {
 				this->getColumnColorRange(col, 0, this->maxCol, row <= 3 ? left : right, colors.KeyColor[row][col]);
 			}
 		}
-		SetAllLedColor(colors, this->type);
+		SetAllLedColor(colors, this->model);
 
 		/*for (int row = 0; row < 6; row++) {
 			for (int col = this->minCol; col < this->maxCol; col++) {
@@ -126,5 +132,5 @@ void Keyboard::getColumnColorRange(int col, float startCol, float endCol, float 
 }
 
 void Keyboard::cleanup() {
-	EnableLedControl(false, this->type);
+	EnableLedControl(false, this->model);
 }
