@@ -3,7 +3,7 @@ Turns a Cooler Master keyboard into an audio level meter. The top half of the ke
 
 
 ## Usage
-- Download the zip from the Releases tab
+- Download the [latest version (0.1)](https://github.com/clarejor/Spectrum-Keys/releases/download/v0.1/SpectrumKeys-0.1.zip)
 - Unzip and run the exe
 
 
