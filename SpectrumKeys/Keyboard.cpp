@@ -60,11 +60,21 @@ void Keyboard::update(float left, float right) {
 			this->alerted = false;
 			SetFullLedColor(128, 128, 128, this->type);
 		}
-		char rgb[3];
-		for (int col = this->minCol; col < this->maxCol; col++) {
-			this->getColumnColor(col, left, right, &rgb[0]);
-			SetLedColor(0, col, rgb[0], rgb[1], rgb[2], this->type);
+
+		COLOR_MATRIX colors = {};
+		for (int row = 0; row < 6; row++) {
+			for (int col = 0; col < this->maxCol; col++) {
+				this->getColumnColorRange(col, 0, this->maxCol, row <= 3 ? left : right, colors.KeyColor[row][col]);
+			}
 		}
+		SetAllLedColor(colors, this->type);
+
+		/*for (int row = 0; row < 6; row++) {
+			for (int col = this->minCol; col < this->maxCol; col++) {
+				this->getColumnColor(col, left, right, &rgb[0]);
+				SetLedColor(row, col, rgb[0], rgb[1], rgb[2], this->type);
+			}
+		}*/
 	}
 }
 
@@ -72,7 +82,7 @@ float mix (float a, float b, float t) {
 	return (a * (1 - t)) + (b * t);
 }
 
-void Keyboard::getColumnColor(int col, float left, float right, char* color) {
+void Keyboard::getColumnColor(int col, float left, float right, KEY_COLOR& color) {
 	if (this->stereo) {
 		float middle = mix(this->minCol, this->maxCol, 0.5);
 		if (col < middle) {
@@ -85,32 +95,32 @@ void Keyboard::getColumnColor(int col, float left, float right, char* color) {
 	}
 }
 
-void Keyboard::getColumnColorRange(int col, float startCol, float endCol, float level, char* color) {
+void Keyboard::getColumnColorRange(int col, float startCol, float endCol, float level, KEY_COLOR& color) {
 	float range = abs(startCol - endCol);
 	float c = abs(0.5 + col - startCol) / range;
 	float yellow = 0.5;
 
 	if (level > 0.95) {
-		color[0] = 255;
-		color[1] = 0;
-		color[2] = 0;
+		color.r = 255;
+		color.g = 0;
+		color.b = 0;
 	} else if (c > level) {
-		color[0] = 128;
-		color[1] = 128;
-		color[2] = 128;
+		color.r = 128;
+		color.g = 128;
+		color.b = 128;
 	} else {
 		if (!gradient)
 			c = level;
 
 		if (c < yellow) {
-			color[0] = mix(0, 255, c / yellow);
-			color[1] = 255;
-			color[2] = 0;
+			color.r = mix(0, 255, c / yellow);
+			color.g = 255;
+			color.b = 0;
 		}
 		else {
-			color[0] = 255;
-			color[1] = mix(255, 0, (c - yellow) / (1.0 - yellow));
-			color[2] = 0;
+			color.r = 255;
+			color.g = mix(255, 0, (c - yellow) / (1.0 - yellow));
+			color.b = 0;
 		}
 	}
 }
